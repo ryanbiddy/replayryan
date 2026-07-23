@@ -48,6 +48,7 @@ workflow reports stage readiness and explicitly marks references as
 ## Local verification
 
 ```text
+python -m pip install -e .
 python -m unittest discover -s tests -v
 python packaging/clean_install_check.py
 ```
