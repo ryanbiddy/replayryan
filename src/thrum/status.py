@@ -102,17 +102,37 @@ def _workflow(products: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     uoink = products["uoink"]
     zing = products["zing"]
     writer = products["writer"]
+    uoink_health = uoink["resident"].get("health")
+    uoink_ready = bool(
+        uoink["running"] and uoink_health and uoink_health["ok"]
+    )
+    writer_health = writer["resident"].get("health")
+    writer_resident_ready = bool(
+        writer["running"] and writer_health and writer_health["ok"]
+    )
+    writer_mcp_ready = bool(
+        writer["state"] != "unhealthy"
+        and writer["mcp"].get("launchable") is True
+    )
+    if uoink_ready:
+        uoink_detail = "Uoink public health is ready"
+    elif uoink["running"]:
+        uoink_detail = "Uoink is running but public health needs attention"
+    else:
+        uoink_detail = "Uoink is not running"
+    if writer_resident_ready:
+        writer_detail = "Writer public health is ready"
+    elif writer_mcp_ready:
+        writer_detail = "Writer MCP configuration is launchable"
+    elif writer["running"]:
+        writer_detail = "Writer is running but public health needs attention"
+    else:
+        writer_detail = "Writer is not running or launchable"
     stages = [
         (
             "grab",
-            bool(
-                uoink["running"]
-                and uoink["resident"].get("health")
-                and uoink["resident"]["health"]["ok"]
-            ),
-            "Uoink public health is ready"
-            if uoink["running"]
-            else "Uoink is not running",
+            uoink_ready,
+            uoink_detail,
         ),
         (
             "study",
@@ -123,10 +143,8 @@ def _workflow(products: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
         ),
         (
             "write",
-            bool(writer["running"] or writer["mcp"].get("launchable") is True),
-            "Writer is running or its MCP configuration is launchable"
-            if writer["running"] or writer["mcp"].get("launchable") is True
-            else "Writer is not running or launchable",
+            writer_resident_ready or writer_mcp_ready,
+            writer_detail,
         ),
     ]
     return [
@@ -147,6 +165,7 @@ def collect_status(
     writer_url: str | None = None,
     registry_dir: Path | None = None,
     timeout: float = 1.0,
+    include_links: bool = False,
     resident_probe: Callable[..., dict[str, Any]] = probe_resident,
     mcp_probe: Callable[..., dict[str, Any]] = probe_mcp,
 ) -> dict[str, Any]:
@@ -155,12 +174,14 @@ def collect_status(
         explicit_url=uoink_url,
         registry_dir=registry_dir,
         timeout=timeout,
+        include_ui=include_links,
     )
     writer_resident = resident_probe(
         WRITER,
         explicit_url=writer_url,
         registry_dir=registry_dir,
         timeout=timeout,
+        include_ui=include_links,
     )
     products = {
         "uoink": _product(

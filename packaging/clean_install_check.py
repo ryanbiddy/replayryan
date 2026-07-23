@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import urllib.request
 import venv
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -218,6 +219,41 @@ def main() -> int:
             )
             require("Suite doctor" in doctor.stdout, "doctor heading is missing")
             require("Family OK" in doctor.stdout, "doctor family result is missing")
+        hub = subprocess.Popen(
+            [str(suite), "serve", "--port", "0", "--timeout", "0.1"],
+            cwd=ROOT,
+            env=clean_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+        )
+        try:
+            require(hub.stdout is not None, "hub stdout was not captured")
+            address_line = hub.stdout.readline().strip()
+            require(
+                address_line.startswith("Thrum: http://127.0.0.1:"),
+                "installed hub did not report a loopback address",
+            )
+            address = address_line.removeprefix("Thrum: ")
+            with urllib.request.urlopen(address, timeout=10) as response:
+                page = response.read().decode("utf-8")
+                require(response.status == 200, "installed hub page was not healthy")
+            with urllib.request.urlopen(
+                address + "/style.css",
+                timeout=3,
+            ) as response:
+                stylesheet = response.read().decode("utf-8")
+                require(response.status == 200, "installed hub CSS was not healthy")
+            require("Grab. Study. Write." in page, "installed hub content is missing")
+            require("--bg:" in stylesheet, "installed wheel omitted the hub CSS")
+        finally:
+            hub.terminate()
+            try:
+                hub.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                hub.kill()
+                hub.wait(timeout=5)
     print("clean-install: PASS")
     return 0
 

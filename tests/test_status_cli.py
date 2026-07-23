@@ -122,6 +122,48 @@ class StatusAndCliTests(unittest.TestCase):
         decoded = json.loads(output.getvalue())
         self.assertFalse(decoded["ok"])
 
+    def test_failed_resident_health_blocks_grab_and_write(self):
+        def failed_resident(spec, **kwargs):
+            value = resident(spec, "unhealthy", running=True)
+            value["health"] = {
+                "ok": False,
+                "state": "needs_attention",
+                "service_version": "1.2.3",
+                "checks": [],
+            }
+            value["peer"] = peer(
+                spec.service_id,
+                "unhealthy",
+                error={
+                    "code": "peer_unhealthy",
+                    "message": "required check failed",
+                    "retryable": True,
+                },
+            )
+            return value
+
+        def mcp_probe(spec):
+            return {
+                "supported": True,
+                "transport": "stdio",
+                "launchable": spec.service_id == "writer",
+                "discovery": "print_config",
+                "state": "available",
+            }
+
+        payload = collect_status(
+            resident_probe=failed_resident,
+            mcp_probe=mcp_probe,
+        )
+
+        self.assertFalse(payload["ok"])
+        self.assertEqual(
+            [stage["reachable"] for stage in payload["workflow"]],
+            [False, False, False],
+        )
+        self.assertIn("needs attention", payload["workflow"][0]["detail"])
+        self.assertIn("needs attention", payload["workflow"][2]["detail"])
+
     def test_json_output_is_bounded_and_path_free(self):
         output = io.StringIO()
 
@@ -146,6 +188,13 @@ class StatusAndCliTests(unittest.TestCase):
         self.assertNotIn("E:\\\\", rendered)
         self.assertNotIn("/home/", rendered)
         self.assertNotIn("127.0.0.1", rendered)
+
+    def test_serve_subcommand_keeps_the_loopback_default(self):
+        with mock.patch("thrum.hub.serve", return_value=0) as serve:
+            result = cli.main(["serve"])
+
+        self.assertEqual(result, 0)
+        serve.assert_called_once_with(port=5178, timeout=1.0)
 
 
 if __name__ == "__main__":

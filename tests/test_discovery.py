@@ -209,6 +209,27 @@ class DiscoveryTests(unittest.TestCase):
         self.assertTrue(result["running"])
         self.assertEqual(result["health"]["state"], "ready")
         self.assertEqual(result["peer"]["state"], "unconfigured")
+        self.assertNotIn("ui", result)
+
+    def test_validated_ui_links_are_opt_in_and_stay_on_the_peer_origin(self):
+        payloads = [manifest(UOINK), health(UOINK)]
+
+        result = probe_resident(
+            UOINK,
+            explicit_url="http://127.0.0.1:61234",
+            json_fetcher=lambda url, timeout: payloads.pop(0),
+            include_ui=True,
+        )
+
+        self.assertEqual(
+            result["ui"],
+            {
+                "home": "http://127.0.0.1:61234/dashboard",
+                "routes": {
+                    "library": "http://127.0.0.1:61234/dashboard#library"
+                },
+            },
+        )
 
     def test_wrong_identity_and_failed_health_are_distinct(self):
         wrong = manifest(UOINK)

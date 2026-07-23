@@ -21,6 +21,17 @@ suite status --json
 
 `thrum` is an alias for `suite`.
 
+For the same status in a local browser:
+
+```text
+suite serve
+```
+
+Then open `http://127.0.0.1:5178`. The page is server-rendered, read-only,
+loopback-bound, and refuses non-loopback Host headers, query strings, and write
+methods. It uses the already-validated service manifest paths for links to a
+running product; it does not read or place a product token in a URL.
+
 The resident Uoink and Writer checks follow the suite discovery order:
 an explicit CLI URL, then a valid per-user runtime lease, then the product's
 default loopback address. Explicit URLs can be supplied with

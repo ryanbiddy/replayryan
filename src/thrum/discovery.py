@@ -590,6 +590,7 @@ def probe_resident(
     explicit_url: str | None = None,
     registry_dir: Path | None = None,
     timeout: float = 1.0,
+    include_ui: bool = False,
     pid_checker: Callable[[int], bool] = process_is_live,
     json_fetcher: Callable[[str, float], dict[str, Any]] = fetch_json,
 ) -> dict[str, Any]:
@@ -703,13 +704,23 @@ def probe_resident(
         # This hub deliberately reads no product credential. Section 3.3
         # therefore requires the detected service to be "unconfigured".
         peer = _peer(spec.service_id, "unconfigured")
-    return {
+    result = {
         "supported": True,
         "running": True,
         "discovery": target.source,
         "health": health_summary,
         "peer": peer,
     }
+    if include_ui:
+        ui = manifest["service"]["ui"]
+        result["ui"] = {
+            "home": target.base_url + ui["home"],
+            "routes": {
+                name: target.base_url + path
+                for name, path in ui["routes"].items()
+            },
+        }
+    return result
 
 
 def _extract_mcp_config(output: str) -> dict[str, Any]:

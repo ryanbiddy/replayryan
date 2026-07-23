@@ -42,6 +42,22 @@ def _parser() -> argparse.ArgumentParser:
             default=1.0,
             help="per-request timeout in seconds (default: 1.0)",
         )
+    serve = subcommands.add_parser(
+        "serve",
+        help="serve the read-only local status page",
+    )
+    serve.add_argument(
+        "--port",
+        type=int,
+        default=5178,
+        help="loopback port (default: 5178; use 0 for an ephemeral port)",
+    )
+    serve.add_argument(
+        "--timeout",
+        type=float,
+        default=1.0,
+        help="per-product request timeout in seconds (default: 1.0)",
+    )
     return parser
 
 
@@ -86,6 +102,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if not 0 < args.timeout <= 30:
         _parser().error("--timeout must be greater than 0 and at most 30 seconds")
+    if args.command == "serve":
+        if not 0 <= args.port <= 65535:
+            _parser().error("--port must be between 0 and 65535")
+        from thrum.hub import serve
+
+        return serve(port=args.port, timeout=args.timeout)
     payload = collect_status(
         uoink_url=args.uoink_url,
         writer_url=args.writer_url,
