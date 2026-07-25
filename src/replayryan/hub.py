@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from typing import Any
 
-from thrum.status import collect_status
+from replayryan.status import collect_status
 
 
 HOST = "127.0.0.1"
@@ -184,14 +184,14 @@ def render_page(payload: dict[str, Any]) -> bytes:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Thrum · Local suite status</title>
+  <title>ReplayRyan Toolkit · Local suite status</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <main>
     <header class="hero">
       <div>
-        <p class="eyebrow">Thrum · local suite</p>
+        <p class="eyebrow">ReplayRyan Toolkit</p>
         <h1>Grab. Study. Write.</h1>
         <p class="lede">One read-only view of Uoink, Zing, and Writer. Each
         product keeps its own data, token, process, and MCP server.</p>
@@ -224,7 +224,7 @@ def render_page(payload: dict[str, Any]) -> bytes:
       <div class="product-grid">{products}</div>
     </section>
     <footer>
-      <p>Read-only and loopback-only. Thrum never reads product credentials,
+      <p>Read-only and loopback-only. The toolkit never reads product credentials,
       proxies MCP, launches peers, posts, publishes, or spends.</p>
       <p>Artifact references remain unavailable until the products ratify
       read-list contracts.</p>
@@ -340,7 +340,7 @@ class HubHandler(BaseHTTPRequestHandler):
             )
             return
         if target.path == "/style.css":
-            body = resources.files("thrum").joinpath("web/style.css").read_bytes()
+            body = resources.files("replayryan").joinpath("web/style.css").read_bytes()
             self._send(
                 200,
                 body,
@@ -350,7 +350,7 @@ class HubHandler(BaseHTTPRequestHandler):
             return
         if target.path == "/health":
             body = json.dumps(
-                {"ok": True, "service": "thrum", "transport": "loopback-http"}
+                {"ok": True, "service": "replayryan", "transport": "loopback-http"}
             ).encode("utf-8")
             self._send(
                 200,
@@ -410,7 +410,7 @@ def create_server(
 def serve(*, port: int = DEFAULT_PORT, timeout: float = 1.0) -> int:
     server = create_server(port=port, timeout=timeout)
     actual_port = int(server.server_address[1])
-    print(f"Thrum: http://{HOST}:{actual_port}", flush=True)
+    print(f"ReplayRyan: http://{HOST}:{actual_port}", flush=True)
     print("Read-only; press Ctrl+C to stop.", flush=True)
     try:
         server.serve_forever()

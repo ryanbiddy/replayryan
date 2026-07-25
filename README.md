@@ -1,30 +1,34 @@
-# Thrum
+# ReplayRyan Toolkit
 
-Thrum is the small, product-independent status CLI for the local Uoink,
-Zing, and Writer suite. It reads the ratified public discovery contracts and
-prints one bounded view of product health and the grab → study → write
-workflow.
+The ReplayRyan Toolkit is the one place your local tools answer for themselves.
+It reads the ratified public discovery contracts of **Uoink**, **Zing**, and
+**Writer** and shows a single bounded view of product health and the
+grab → study → write workflow.
 
-It does not start, stop, update, proxy, or call a product on the user's
-behalf. It never reads product tokens or databases, and it never probes the
-reserved Zing HTTP port.
+Each product stays its own tool. Uoink is the corpus tool, Zing studies and
+directs video, Writer drafts. The toolkit is what holds them: it reports, it
+links, and it stops there.
+
+It does not start, stop, update, proxy, or call a product on your behalf. It
+never reads product tokens or databases, and it never probes the reserved Zing
+HTTP port.
 
 ## Local use
 
-Thrum requires Python 3.11 or newer and has no runtime dependencies.
+Requires Python 3.11 or newer. No runtime dependencies.
 
 ```text
 python -m pip install .
-suite doctor
-suite status --json
+rr doctor
+rr status --json
 ```
 
-`thrum` is an alias for `suite`.
+`replayryan` is the long-form alias for `rr`.
 
 For the same status in a local browser:
 
 ```text
-suite serve
+rr serve
 ```
 
 Then open `http://127.0.0.1:5178`. The page is server-rendered, read-only,
@@ -37,11 +41,11 @@ an explicit CLI URL, then a valid per-user runtime lease, then the product's
 default loopback address. Explicit URLs can be supplied with
 `--uoink-url` and `--writer-url`.
 
-Zing is stdio-only. Thrum looks for the installed `zing` command and validates
-the output of `zing serve-mcp --print-config desktop`. Writer launchability is
-checked the same way with `writer serve-mcp --print-config`. A missing command
-is a calm absence; a command that returns an invalid configuration is
-unhealthy.
+Zing is stdio-only. The toolkit looks for the installed `zing` command and
+validates the output of `zing serve-mcp --print-config desktop`. Writer
+launchability is checked the same way with `writer serve-mcp --print-config`. A
+missing command is a calm absence; a command that returns an invalid
+configuration is unhealthy.
 
 The suite contract does not yet define a trusted install catalog. Until one
 exists, commands that are installed outside `PATH` cannot be discovered.

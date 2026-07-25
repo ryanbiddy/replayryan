@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from thrum.discovery import (
+from replayryan.discovery import (
     UOINK,
     WRITER,
     ZING,

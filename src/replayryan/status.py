@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from thrum.discovery import (
+from replayryan.discovery import (
     UOINK,
     WRITER,
     ZING,
@@ -202,7 +202,7 @@ def collect_status(
     }
     ordered = [products[name] for name in ("uoink", "zing", "writer")]
     return {
-        "format": "thrum.status",
+        "format": "replayryan.status",
         "version": 1,
         "checked_at": _now(),
         "ok": all(product["state"] != "unhealthy" for product in ordered),

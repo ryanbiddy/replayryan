@@ -7,8 +7,8 @@ import json
 import sys
 from typing import Any, Sequence
 
-from thrum import __version__
-from thrum.status import collect_status
+from replayryan import __version__
+from replayryan.status import collect_status
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -105,7 +105,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "serve":
         if not 0 <= args.port <= 65535:
             _parser().error("--port must be between 0 and 65535")
-        from thrum.hub import serve
+        from replayryan.hub import serve
 
         return serve(port=args.port, timeout=args.timeout)
     payload = collect_status(

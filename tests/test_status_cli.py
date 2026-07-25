@@ -6,9 +6,9 @@ import json
 import unittest
 from unittest import mock
 
-from thrum import cli
-from thrum.discovery import UOINK, WRITER
-from thrum.status import collect_status
+from replayryan import cli
+from replayryan.discovery import UOINK, WRITER
+from replayryan.status import collect_status
 
 
 def peer(service_id, state, *, error=None):
@@ -85,7 +85,7 @@ class StatusAndCliTests(unittest.TestCase):
 
     def test_unhealthy_product_makes_family_and_cli_fail(self):
         payload = {
-            "format": "thrum.status",
+            "format": "replayryan.status",
             "version": 1,
             "checked_at": "2026-07-23T08:00:00Z",
             "ok": False,
@@ -190,7 +190,7 @@ class StatusAndCliTests(unittest.TestCase):
         self.assertNotIn("127.0.0.1", rendered)
 
     def test_serve_subcommand_keeps_the_loopback_default(self):
-        with mock.patch("thrum.hub.serve", return_value=0) as serve:
+        with mock.patch("replayryan.hub.serve", return_value=0) as serve:
             result = cli.main(["serve"])
 
         self.assertEqual(result, 0)

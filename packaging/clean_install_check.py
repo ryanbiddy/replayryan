@@ -1,4 +1,4 @@
-"""Build, install, and exercise Thrum from a fresh temporary environment."""
+"""Build, install, and exercise the ReplayRyan Toolkit from a clean environment."""
 
 from __future__ import annotations
 
@@ -121,7 +121,7 @@ def _service(**kwargs: object) -> Iterator[str]:
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="thrum-clean-") as raw:
+    with tempfile.TemporaryDirectory(prefix="replayryan-clean-") as raw:
         base = Path(raw)
         environment = base / "venv"
         wheelhouse = base / "wheelhouse"
@@ -139,22 +139,28 @@ def main() -> int:
                 "pip",
                 "wheel",
                 "--no-deps",
-                "--no-build-isolation",
+                # Build in pip's isolated env rather than --no-build-isolation.
+                # That flag required setuptools to already be importable from
+                # whatever interpreter invoked this script, which is exactly what
+                # a clean-install check must not assume: CI installs with
+                # --no-deps and modern venvs no longer ship setuptools, so the
+                # build failed with "Cannot import 'setuptools.build_meta'"
+                # before it could test anything.
                 "--wheel-dir",
                 str(wheelhouse),
                 str(ROOT),
             ]
         )
-        wheel = next(wheelhouse.glob("ryan_thrum-*.whl"))
+        wheel = next(wheelhouse.glob("replayryan-*.whl"))
         run([str(python), "-m", "pip", "install", "--no-deps", str(wheel)])
         clean_env = os.environ.copy()
         clean_env["PATH"] = str(scripts)
         clean_env["PYTHONIOENCODING"] = "utf-8"
-        run([str(python), "-m", "thrum", "--version"], env=clean_env)
-        suite = scripts / ("suite.exe" if os.name == "nt" else "suite")
-        thrum = scripts / ("thrum.exe" if os.name == "nt" else "thrum")
-        run([str(suite), "--help"], env=clean_env)
-        run([str(thrum), "--help"], env=clean_env)
+        run([str(python), "-m", "replayryan", "--version"], env=clean_env)
+        rr = scripts / ("rr.exe" if os.name == "nt" else "rr")
+        replayryan = scripts / ("replayryan.exe" if os.name == "nt" else "replayryan")
+        run([str(rr), "--help"], env=clean_env)
+        run([str(replayryan), "--help"], env=clean_env)
         with (
             _service(
                 service_id="uoink",
@@ -182,7 +188,7 @@ def main() -> int:
         ):
             status = run(
                 [
-                    str(suite),
+                    str(rr),
                     "status",
                     "--json",
                     "--uoink-url",
@@ -207,7 +213,7 @@ def main() -> int:
             )
             doctor = run(
                 [
-                    str(thrum),
+                    str(replayryan),
                     "doctor",
                     "--uoink-url",
                     uoink_url,
@@ -220,7 +226,7 @@ def main() -> int:
             require("Suite doctor" in doctor.stdout, "doctor heading is missing")
             require("Family OK" in doctor.stdout, "doctor family result is missing")
         hub = subprocess.Popen(
-            [str(suite), "serve", "--port", "0", "--timeout", "0.1"],
+            [str(rr), "serve", "--port", "0", "--timeout", "0.1"],
             cwd=ROOT,
             env=clean_env,
             stdout=subprocess.PIPE,
@@ -232,10 +238,10 @@ def main() -> int:
             require(hub.stdout is not None, "hub stdout was not captured")
             address_line = hub.stdout.readline().strip()
             require(
-                address_line.startswith("Thrum: http://127.0.0.1:"),
+                address_line.startswith("ReplayRyan: http://127.0.0.1:"),
                 "installed hub did not report a loopback address",
             )
-            address = address_line.removeprefix("Thrum: ")
+            address = address_line.removeprefix("ReplayRyan: ")
             with urllib.request.urlopen(address, timeout=10) as response:
                 page = response.read().decode("utf-8")
                 require(response.status == 200, "installed hub page was not healthy")
