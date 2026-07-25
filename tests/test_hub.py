@@ -5,7 +5,7 @@ import http.client
 import threading
 import unittest
 
-from thrum.hub import create_server, render_page
+from replayryan.hub import create_server, render_page
 
 
 def peer(service_id, state, *, error=None):
@@ -67,7 +67,7 @@ def product(
 
 def status_payload():
     return {
-        "format": "thrum.status",
+        "format": "replayryan.status",
         "version": 1,
         "checked_at": "2026-07-23T14:00:00Z",
         "ok": True,

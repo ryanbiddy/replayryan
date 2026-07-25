@@ -504,7 +504,7 @@ def fetch_json(url: str, timeout: float) -> dict[str, Any]:
         method="GET",
         headers={
             "Accept": "application/json",
-            "User-Agent": "Thrum/0.1 local-suite-doctor",
+            "User-Agent": "ReplayRyan/0.1 local-suite-doctor",
         },
     )
     try:
