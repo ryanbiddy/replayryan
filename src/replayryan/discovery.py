@@ -400,17 +400,37 @@ def resolve_target(
     except OSError as exc:
         raise _error("invalid_lease", "runtime lease cannot be inspected") from exc
     if present:
-        lease = validate_runtime_lease(
-            _read_lease_file(lease_path),
-            spec,
-            pid_checker=pid_checker,
-        )
-        return Target(
-            lease["base_url"],
-            "lease",
-            True,
-            lease_service_version=lease["service_version"],
-        )
+        try:
+            lease = validate_runtime_lease(
+                _read_lease_file(lease_path),
+                spec,
+                pid_checker=pid_checker,
+            )
+        except PeerError as exc:
+            # The contract's discovery order is explicit URL -> *valid* lease ->
+            # default. A lease whose process is gone is not a valid lease, so
+            # discovery continues to the default address rather than stopping.
+            #
+            # This matters because a lease outlives an unclean shutdown: kill
+            # `writer serve` once and the file sits there with a dead PID
+            # forever. Treating that as unhealthy makes a product the user
+            # simply is not running turn the whole family red, which is exactly
+            # what the contract's "absence of an optional peer is calm" rule
+            # exists to prevent. Falling through means we probe the default
+            # address and report what is actually true: nothing is listening.
+            #
+            # Only staleness falls through. A malformed or unreadable lease
+            # still raises, because that is a real anomaly rather than an
+            # ordinary stopped process.
+            if exc.code != "stale_lease":
+                raise
+        else:
+            return Target(
+                lease["base_url"],
+                "lease",
+                True,
+                lease_service_version=lease["service_version"],
+            )
     return Target(spec.default_url, "default", False)
 
 
