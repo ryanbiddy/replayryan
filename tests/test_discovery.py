@@ -157,6 +157,64 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(result["peer"]["state"], "unhealthy")
         self.assertEqual(result["peer"]["error"]["code"], "invalid_lease")
 
+    def test_stale_lease_falls_through_to_default_discovery(self):
+        """A lease whose process is gone is not a valid lease, so the contract's
+        discovery order continues to the default address instead of stopping.
+
+        A lease outlives an unclean shutdown: kill `writer serve` once and the
+        file sits there with a dead PID indefinitely. Reporting that as
+        unhealthy turned a product the user simply was not running into a red
+        family, which is what the "absence of an optional peer is calm" rule
+        exists to prevent.
+        """
+        with tempfile.TemporaryDirectory() as raw:
+            registry = Path(raw)
+            path = registry / "uoink.json"
+            path.write_text(json.dumps(lease(UOINK)), encoding="utf-8")
+            if os.name != "nt":
+                path.chmod(0o600)
+            attempted = []
+
+            def fetcher(url, timeout):
+                attempted.append(url)
+                raise TransportError(
+                    "unavailable",
+                    "nothing is listening",
+                    retryable=True,
+                    absence_eligible=True,
+                )
+
+            result = probe_resident(
+                UOINK,
+                registry_dir=registry,
+                json_fetcher=fetcher,
+                pid_checker=lambda _: False,
+            )
+        # It probed the DEFAULT address, not the dead lease's, and stayed calm.
+        self.assertTrue(attempted, "discovery must continue to the default address")
+        self.assertTrue(attempted[0].startswith(UOINK.default_url))
+        self.assertEqual(result["peer"]["state"], "absent")
+
+    def test_malformed_lease_still_raises_even_though_stale_does_not(self):
+        """Only staleness falls through. A corrupt lease is a real anomaly and
+        must not be quietly downgraded to a calm absence."""
+        with tempfile.TemporaryDirectory() as raw:
+            registry = Path(raw)
+            payload = lease(UOINK)
+            payload["base_url"] = "http://attacker.test:5179"
+            path = registry / "uoink.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            if os.name != "nt":
+                path.chmod(0o600)
+            result = probe_resident(
+                UOINK,
+                registry_dir=registry,
+                json_fetcher=lambda url, timeout: self.fail("must not fetch"),
+                pid_checker=lambda _: False,
+            )
+        self.assertEqual(result["peer"]["state"], "unhealthy")
+        self.assertEqual(result["peer"]["error"]["code"], "invalid_lease")
+
     def test_non_regular_lease_is_invalid_not_absent(self):
         with tempfile.TemporaryDirectory() as raw:
             registry = Path(raw)
