@@ -139,7 +139,15 @@ def main() -> int:
                 "pip",
                 "wheel",
                 "--no-deps",
-                "--no-build-isolation",
+                # Build in pip's isolated env rather than --no-build-isolation.
+                # That flag required setuptools to already be importable from
+                # whatever interpreter invoked this script, which is exactly
+                # what a clean-install check must not assume: CI installs Thrum
+                # with --no-deps, and modern venvs no longer ship setuptools, so
+                # the build failed with "Cannot import 'setuptools.build_meta'"
+                # before it could test anything. Isolation also matches the
+                # point of the check -- prove the wheel builds from a clean
+                # slate, not from this machine's ambient packages.
                 "--wheel-dir",
                 str(wheelhouse),
                 str(ROOT),
