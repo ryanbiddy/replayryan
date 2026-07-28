@@ -5,3 +5,10 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+
+# local env / secrets — never commit publishing or product tokens
+.env
+.env.*
+*.env
+.pypirc
+!.env.example
